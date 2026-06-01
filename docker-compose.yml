@@ -1,6 +1,21 @@
 x-bake:
   no-cache: false
 services:
+  front-end:
+    build:
+      context: https://github.com/Main-Main-Project/Front-end.git#test
+      dockerfile: Dockerfile
+    container_name: front-end
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - back-end
+    restart: unless-stopped
+    networks:
+      - main-network
+  
   back-end:
     build:
       context: https://github.com/Main-Main-Project/Back-end.git#test
