@@ -1,0 +1,171 @@
+services:
+  # =====================================================
+  # Front-end
+  # 현재는 Vite / React 구조 미정이라 주석 처리
+  # 나중에 Front-end Dockerfile 준비되면 주석 해제
+  # =====================================================
+  # front-end:
+  #   build:
+  #     context: https://github.com/Main-Main-Project/Front-end.git#test
+  #     dockerfile: Dockerfile
+  #   container_name: main-front-end
+  #   ports:
+  #     - "5173:5173"
+  #   environment:
+  #     - VITE_API_BASE_URL=http://localhost:8000
+  #   depends_on:
+  #     - back-end
+  #   restart: unless-stopped
+  #   networks:
+  #     - main-network
+
+  # =====================================================
+  # Back-end
+  # 현재는 test 브랜치 기준으로 실제 구동 테스트
+  # =====================================================
+  back-end:
+    build:
+      context: "https://github.com/Main-Main-Project/Back-end.git#test"
+      dockerfile: Dockerfile
+    container_name: main-back-end
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    volumes:
+      - backend_logs:/app/logging
+      - backend_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - main-network
+
+  # =====================================================
+  # PostgreSQL
+  # 실제 DB 컨테이너
+  # =====================================================
+  postgres:
+    image: postgres:16
+    container_name: main-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - main-network
+
+  # =====================================================
+  # Ollama
+  # 실제 LLM 실행 컨테이너
+  # =====================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: main-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - main-network
+
+  # =====================================================
+  # Grafana
+  # 로그/메트릭 확인용 대시보드
+  # =====================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: main-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - main-network
+
+  # =====================================================
+  # Loki
+  # 로그 저장소
+  # =====================================================
+  loki:
+    image: grafana/loki:latest
+    container_name: main-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    restart: unless-stopped
+    networks:
+      - main-network
+
+  # =====================================================
+  # Promtail
+  # Back-end 로그 파일을 읽어서 Loki로 전송
+  # =====================================================
+  promtail:
+    image: grafana/promtail:latest
+    container_name: main-promtail
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - backend_logs:/app/logging:ro
+    depends_on:
+      - loki
+      - back-end
+    restart: unless-stopped
+    networks:
+      - main-network
+
+  # =====================================================
+  # Prometheus
+  # Back-end /metrics 수집용
+  # =====================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: main-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - main-network
+
+volumes:
+  postgres_data:
+  ollama_data:
+  backend_logs:
+  backend_uploads:
+  grafana_data:
+  loki_data:
+  prometheus_data:
+
+networks:
+  main-network:
+    driver: bridge
