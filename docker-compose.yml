@@ -3,7 +3,7 @@ x-bake:
 services:
   front-end:
     build:
-      context: https://github.com/Main-Main-Project/Front-end.git#test
+      context: https://github.com/Main-Main-Project/Front-end.git#main
       dockerfile: Dockerfile
     container_name: front-end
     ports:
