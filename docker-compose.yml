@@ -18,7 +18,7 @@ services:
   
   back-end:
     build:
-      context: https://github.com/Main-Main-Project/Back-end.git#main
+      context: https://github.com/Main-Main-Project/Back-end.git#develop
       dockerfile: Dockerfile
     container_name: back-end
     ports:
@@ -54,8 +54,30 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+      - ./models:/models
     networks:
       - main-network
+
+
+  # Ollama 모델 자동 등록 (law-qwen-7b)
+  # ollama 뜬 뒤 한 번 실행되고 종료됨
+  ollama-init:
+    image: ollama/ollama
+    container_name: ollama-init
+    depends_on:
+      - ollama
+    volumes:
+      - ./models:/models
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      sh -c "
+        sleep 5 &&
+        ollama create law-qwen-7b -f /models/Modelfile
+      "
+    networks:
+      - main-network
+    restart: "no"
 
 
   # =====================================================
@@ -78,6 +100,7 @@ services:
     restart: unless-stopped
     networks:
       - main-network
+
 
   # =====================================================
   # Loki
@@ -144,3 +167,6 @@ volumes:
 networks:
   main-network:
     driver: bridge
+
+ 
+

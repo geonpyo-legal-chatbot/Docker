@@ -1,0 +1,22 @@
+FROM /models/law-qwen-7b.gguf
+
+TEMPLATE """{{- range .Messages }}
+{{- if eq .Role "system" }}<|im_start|>system
+{{ .Content }}<|im_end|>
+{{ else if eq .Role "user" }}<|im_start|>user
+{{ .Content }}<|im_end|>
+{{ else if eq .Role "assistant" }}<|im_start|>assistant
+{{ .Content }}<|im_end|>
+{{ end }}
+{{- end }}<|im_start|>assistant
+"""
+
+SYSTEM "당신은 대한민국 법률 전문 AI 어시스턴트입니다.
+사용자의 법률 관련 질문에 대해 정확하고 신중하게 답변하세요.
+실제 법률 자문이 필요한 사안은 변호사 등 전문가의 검토가 필요하다는 점을 안내하세요."
+
+PARAMETER repeat_penalty 1.1
+PARAMETER stop <|im_start|>
+PARAMETER stop <|im_end|>
+PARAMETER temperature 0.3
+PARAMETER top_p 0.9
