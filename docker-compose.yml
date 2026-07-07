@@ -3,7 +3,7 @@ x-bake:
 services:
   front-end:
     build:
-      context: https://github.com/Main-Main-Project/Front-end.git#main
+      context: ../Front-end
       dockerfile: Dockerfile
     container_name: front-end
     ports:
@@ -18,32 +18,18 @@ services:
   
   back-end:
     build:
-      context: https://github.com/Main-Main-Project/Back-end.git#develop
+      context: ../Back-end
       dockerfile: Dockerfile
+    env_file:
+      - ./back-end/.env
     container_name: back-end
     ports:
       - "8000:8000"
     volumes:
       - ./fonts:/fonts
     depends_on:
-      - postgres
       - ollama
-    env_file: ./back-end/.env
     restart: unless-stopped
-    networks:
-      - main-network
-
-  postgres:
-    image: postgres:16
-    container_name: postgres-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: service_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     networks:
       - main-network
 
@@ -156,7 +142,6 @@ services:
       - main-network
 
 volumes:
-  postgres_data:
   ollama_data:
   backend_logs:
   backend_uploads:
