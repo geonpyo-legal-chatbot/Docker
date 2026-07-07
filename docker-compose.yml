@@ -1,5 +1,6 @@
 x-bake:
   no-cache: false
+
 services:
   front-end:
     build:
@@ -15,7 +16,7 @@ services:
     restart: unless-stopped
     networks:
       - main-network
-  
+
   back-end:
     build:
       context: ../Back-end
@@ -44,9 +45,6 @@ services:
     networks:
       - main-network
 
-
-  # Ollama 모델 자동 등록 (law-qwen-7b)
-  # ollama 뜬 뒤 한 번 실행되고 종료됨
   ollama-init:
     image: ollama/ollama
     container_name: ollama-init
@@ -65,11 +63,6 @@ services:
       - main-network
     restart: "no"
 
-
-  # =====================================================
-  # Grafana
-  # 로그/메트릭 확인용 대시보드
-  # =====================================================
   grafana:
     image: grafana/grafana:latest
     container_name: main-grafana
@@ -87,11 +80,6 @@ services:
     networks:
       - main-network
 
-
-  # =====================================================
-  # Loki
-  # 로그 저장소
-  # =====================================================
   loki:
     image: grafana/loki:latest
     container_name: main-loki
@@ -105,10 +93,6 @@ services:
     networks:
       - main-network
 
-  # =====================================================
-  # Promtail
-  # Back-end 로그 파일을 읽어서 Loki로 전송
-  # =====================================================
   promtail:
     image: grafana/promtail:latest
     container_name: main-promtail
@@ -123,10 +107,6 @@ services:
     networks:
       - main-network
 
-  # =====================================================
-  # Prometheus
-  # Back-end /metrics 수집용
-  # =====================================================
   prometheus:
     image: prom/prometheus:latest
     container_name: main-prometheus
@@ -152,6 +132,3 @@ volumes:
 networks:
   main-network:
     driver: bridge
-
- 
-
